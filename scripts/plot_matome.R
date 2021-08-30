@@ -1,0 +1,6 @@
+source("scripts/plot_sum_memo.R")
+source("scripts/plot_sum_unp_memo.R")
+source("scripts/plot_cross_memo.R")
+source("scripts/plot_cross_unp_memo.R")
+source("scripts/plot_time_memo.R")
+source("scripts/plot_question_memo.R")
