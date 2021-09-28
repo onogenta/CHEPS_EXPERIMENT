@@ -3,7 +3,7 @@ data_question<-data%>%
   mutate(simultaneity=if_else(simultaneity==1,true="simul",false="non_simul"))%>%
   mutate(simultaneity=factor(simultaneity))%>%
   tidyr::gather(key=Question,value=rating,Q1,Q2,Q3,Q4)%>%
-  filter(delay_num==1|delay_num==3|delay_num==5)%>%
+  #filter(delay_num==1|delay_num==3|delay_num==5)%>%
   group_by(simultaneity)
   
 data_question_simul<-data_question%>%
