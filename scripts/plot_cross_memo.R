@@ -43,4 +43,7 @@ p_con_5<-p_con_4+
   )+
   geom_hline(linetype="dashed",yintercept = 30,col="black")
 
-ggsave(file = "pain_con.png", plot = p_con_5, dpi = 100, width = 8.27,height = 11.69)
+file_pass=paste("result/",data$ID[1],"/",sep="")
+file_name=paste(file_pass,data$ID[1],"pain_con.png",sep="")
+
+ggsave(file = file_name, plot = p_con_5, dpi = 100, width = 8.27,height = 11.69)

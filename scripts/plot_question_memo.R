@@ -89,7 +89,13 @@ p_q2<-ggplot(data_question_simul_Q1,aes(x=simultaneity,y=Q_avg,fill=stimu_pos))+
 #   scale_y_continuous(limits = c(0,100))+
 #   theme_classic()
 
-ggsave(file = "question_all.png", plot = p_q1, dpi = 100, width = 8.27, height = 11.69)
-ggsave(file = "question_Q1.png", plot = p_q2, dpi = 100, width = 8.27, height = 11.69)
+file_pass=paste("result/",data$ID[1],"/",sep="")
+file_name=paste(file_pass,data$ID[1],"question_all.png",sep="")
+file_name_sub=paste(file_pass,data$ID[1],"question_Q1.png",sep="")
+
+
+
+ggsave(file = file_name, plot = p_q1, dpi = 100, width = 8.27, height = 11.69)
+ggsave(file = file_name_sub, plot = p_q2, dpi = 100, width = 8.27, height = 11.69)
 
 

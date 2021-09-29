@@ -161,7 +161,11 @@ p_1_pos_2<-ggplot(data=data_sum_pos2,aes(x=delay,y=pain_avg))+
        subtitle='upper_arm')
 
 p<-ggarrange(p_4,p_1_pos_1,p_1_pos_2, nrow = 3, ncol = 1)
-ggsave(file = "pain_all.png", plot = p, dpi = 100, width = 16, height = 22)
+
+
+file_pass=paste("result/",data$ID[1],"/",sep="")
+file_name=paste(file_pass,data$ID[1],"pain_all.png",sep="")
+ggsave(file = file_name, plot = p, dpi = 100, width = 16, height = 22)
 
 
 

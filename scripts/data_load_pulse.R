@@ -21,7 +21,7 @@ data_load_pulse<-function(file_name){
   
   data_demo<-data%>%
     filter(ID!=file_name)
-  
+
   data<-data%>%
     filter(ID==file_name)
 
