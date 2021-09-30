@@ -7,7 +7,7 @@ library(tidyr)
 library(lubridate)
 library(scales)
 
-data_load_pulse<-function(file_name){
+data_load_pulse<-function(file_name,load_multi_file=FALSE){
   file_path=paste("raw_data/",file_name,sep="")
   
   data = list.files(path = file_path, full.names = T) %>%
@@ -19,16 +19,23 @@ data_load_pulse<-function(file_name){
            simultaneity=as.numeric(simultaneity),Q1=as.numeric(Q1),Q2=as.numeric(Q2),Q3=as.numeric(Q3),Q4=as.numeric(Q4))%>%
     mutate(time=as.POSIXct(time,format="%H:%M"))
   
-  data_demo<-data%>%
-    filter(ID!=file_name)
-
-  data<-data%>%
-    filter(ID==file_name)
-
+  
+  
+  if(load_multi_file==FALSE){
+    data_demo<-data%>%
+      filter(ID!=file_name)
+    
+    data<-data%>%
+      filter(ID==file_name)
+    
+    assign("data_demo",data_demo,env=.GlobalEnv)
+    
+  }
+ 
  
 
   assign("data",data,env=.GlobalEnv)
-  assign("data_demo",data_demo,env=.GlobalEnv)
+  
   
   
 }
