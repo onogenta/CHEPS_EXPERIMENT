@@ -77,7 +77,14 @@ p_4<-p_3+
         plot.subtitle=element_text(size=10, color="#666666")) + 
   labs(x="\ndelay\n", y="\nrating_Q1\n", color = "",
        title='\n\n', 
-       subtitle='')
+       subtitle='')+
+  
+  theme(axis.title.x = element_text(size = 30),
+        axis.text.x = element_text(size=20,face = "bold"),
+        axis.title.y = element_text(size = 30),
+        axis.text.y = element_text(size=20),
+        legend.text = element_text(size=25),
+        legend.title = element_text(size = 30))
 
 
 
@@ -112,7 +119,14 @@ p_1_pos_1<-ggplot(data=data_sum_pos1,aes(x=delay,y=Q1_avg))+
         plot.subtitle=element_text(size=10, color="#666666")) + 
   labs(x="\ndelay\n", y="\nrating_Q1\n", color = "",
        title='\n\n', 
-       subtitle='wrist')
+       subtitle='wrist')+
+  
+  theme(axis.title.x = element_text(size = 30),
+        axis.text.x = element_text(size=20,face = "bold"),
+        axis.title.y = element_text(size = 30),
+        axis.text.y = element_text(size=20),
+        legend.text = element_text(size=25),
+        legend.title = element_text(size = 30))
 
 
 p_1_pos_2<-ggplot(data=data_sum_pos2,aes(x=delay,y=Q1_avg))+
@@ -146,15 +160,22 @@ p_1_pos_2<-ggplot(data=data_sum_pos2,aes(x=delay,y=Q1_avg))+
         plot.subtitle=element_text(size=10, color="#666666")) + 
   labs(x="\ndelay\n", y="\nrating_Q1\n", color = "",
        title='\n\n', 
-       subtitle='upper_arm')
+       subtitle='upper_arm')+
+  
+  theme(axis.title.x = element_text(size = 30),
+        axis.text.x = element_text(size=20,face = "bold"),
+        axis.title.y = element_text(size = 30),
+        axis.text.y = element_text(size=20),
+        legend.text = element_text(size=25),
+        legend.title = element_text(size = 30))
 
-p_pos<-ggplot(data = data_diff_sum_pos,aes(x=stimu_pos,y=Q1_avg,fill=stimu_pos))+
-  theme_classic()+
-  geom_bar(stat = "identity",width=0.5,position = position_dodge(0.1))+
-  geom_errorbar(aes(ymin=Q1_avg-Q1_sd,ymax=Q1_avg+Q1_sd), position = position_dodge(width=0.1),
-                width=.1)+
-  scale_y_continuous(limits = c(0,1.2))
-p_pos
+# p_pos<-ggplot(data = data_diff_sum_pos,aes(x=stimu_pos,y=Q1_avg,fill=stimu_pos))+
+#   theme_classic()+
+#   geom_bar(stat = "identity",width=0.5,position = position_dodge(0.1))+
+#   geom_errorbar(aes(ymin=Q1_avg-Q1_sd,ymax=Q1_avg+Q1_sd), position = position_dodge(width=0.1),
+#                 width=.1)+
+#   scale_y_continuous(limits = c(0,1.2))
+# p_pos
 
 
 p<-ggarrange(p_4,p_1_pos_1,p_1_pos_2, nrow = 3, ncol = 1)
