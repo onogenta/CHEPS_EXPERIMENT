@@ -1,3 +1,4 @@
+data_load_pulse_self("all_self")
 
 data_cwc_mean<-data_self%>%
   group_by(ID,mode,simul)%>%
@@ -46,11 +47,11 @@ plot_cond_avg_unp
 #plot_cond_avg_unp
 
 
-file_name="result/plot_condition_pain_all.png"
+file_name="result/active_all/plot_condition_pain_all.png"
 
 ggsave(file = file_name, plot = plot_cond_avg, dpi = 300, width = 8.27,height = 11.68)
 
-file_name="result/plot_condition_unp_all.png"
+file_name="result/active_all/plot_condition_unp_all.png"
 
 ggsave(file = file_name, plot = plot_cond_avg_unp, dpi = 300, width = 8.27,height = 11.68)
 

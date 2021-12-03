@@ -6,6 +6,14 @@ library(ggpubr)
 library(tidyr)
 library(lubridate)
 library(scales)
+library(rstatix)
+library(lmerTest)
+library(lme4)
+library(report)
+library(MuMIn)
+library(ggpmisc)
+library(ICC)
+library(corrr)
 
 data_load_pulse<-function(file_name,load_multi_file=FALSE){
   file_path=paste("raw_data/",file_name,sep="")
@@ -39,6 +47,7 @@ data_load_pulse<-function(file_name,load_multi_file=FALSE){
   
   
 }
+
 
 #,Q1=V10,Q2=V11,Q3=V12,Q4=V13
 #,Q1=as.numeric(Q1),Q2=as.numeric(Q2),Q3=as.numeric(Q3),Q4=as.numeric(Q4)

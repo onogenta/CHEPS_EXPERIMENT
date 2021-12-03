@@ -8,12 +8,12 @@ for(i in 31:34){
 }
 
 
-for(i in 2:10){
+for(i in 19:20){
   number=400+i
   name=paste("s",number,sep = "")
   data_load_pulse_self(name)
-  source("scripts/plot_self_cond.R")
-  source("scripts/plot_self_bin_diff.R")
-  source("scripts/plot_self_bin_delay.R")
+  source("scripts/active/plot_self_cond.R")
+  source("scripts/active/plot_self_bin_diff.R")
+  source("scripts/active/plot_self_bin_delay.R")
   #source("scripts/plot_relation_memo.R")
 }
