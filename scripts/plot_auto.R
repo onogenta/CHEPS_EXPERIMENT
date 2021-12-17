@@ -8,7 +8,7 @@ for(i in 31:34){
 }
 
 
-for(i in 19:20){
+for(i in 21:22){
   number=400+i
   name=paste("s",number,sep = "")
   data_load_pulse_self(name)

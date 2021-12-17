@@ -7,7 +7,8 @@ data_load_pulse("all",load_multi_file = TRUE)
 
 data_diff<-data%>%
   group_by(ID)%>%
-  mutate(pain_diff=rating_pain-mean(rating_pain,na.rm=TRUE),unp_diff=rating_unp-mean(rating_unp,na.rm=TRUE),Q1_diff=Q1-mean(Q1,na.rm=TRUE),delay_abs=abs(delay))%>%
+  mutate(pain_diff=rating_pain-mean(rating_pain,na.rm=TRUE),unp_diff=rating_unp-mean(rating_unp,na.rm=TRUE),Q1_diff=Q1-mean(Q1,na.rm=TRUE),
+         Q2_diff=Q2-mean(Q2,na.rm=TRUE),Q3_diff=Q3-mean(Q3,na.rm=TRUE),Q4_diff=Q4-mean(Q4,na.rm=TRUE),delay_abs=abs(delay))%>%
   ungroup()
 
 data_diff<-data_diff%>%
