@@ -46,7 +46,8 @@ data_load_pulse_self<-function(file_name){
   
   data<-data%>%
     group_by(ID,mode)%>%
-    mutate(pain_cwc_mode=rating_pain-mean(rating_pain,na.rm=TRUE),unp_cwc_mode=rating_unp-mean(rating_unp,na.rm=TRUE))
+    mutate(pain_cwc_mode=rating_pain-mean(rating_pain,na.rm=TRUE),unp_cwc_mode=rating_unp-mean(rating_unp,na.rm=TRUE))%>%
+    ungroup()
   
  
   

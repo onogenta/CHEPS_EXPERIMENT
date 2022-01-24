@@ -30,7 +30,8 @@ data_load_adaptation<-function(file_name){
     mutate(time=as.POSIXct(time,format="%H:%M"),
            simul=factor(if_else(simultaneity==1,true="simul",
                                 false = "non_simul"))
-    )
+    )%>%
+    mutate(condition=paste("arm_delay=",round(arm_delay,1)*1000,",","stimu_delay=",delay*1000,sep = ""))
   
   
   data$simul<- factor(data$simul,levels = c("simul","non_simul"))
