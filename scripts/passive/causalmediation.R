@@ -1,18 +1,16 @@
-library(mediation)
+library(mediation)##必要なパッケージの用意
 library(dplyr)
 library(lme4)
 library(lmerTest)
 
-detach("package:lmerTest", unload = T)
+detach("package:lmerTest", unload = T)#lmerTestのdetach,これがあるとlmemの出力の型がlmerTestになってしまうのでmediationパッケージを使用できない
 
 
-data_load_pulse("all",load_multi_file = TRUE)
+data_load_pulse("all",load_multi_file = TRUE)#全被験者データの読み込み
 data<-data%>%
-  mutate(stimu_pos=factor(if_else(stimu_pos==1,true = "wrist",false = "fore_arm"),levels = c("wrist","fore_arm")),
+  mutate(stimu_pos=factor(if_else(stimu_pos==1,true = "wrist",false = "fore_arm"),levels = c("wrist","fore_arm")),#stimu_posの値を数値から文字に変更，プロット順序をwrist,forearmに
          simultaneity=factor(if_else(simultaneity==1,true="simul",
-                                     false = "non_simul"),levels = c("simul","non_simul")))
-
-
+                                     false = "non_simul"),levels = c("simul","non_simul")))#simultaneityを数値から文字に変更，プロット順序をsimul,non_simulに
 
 df=data_test2
 

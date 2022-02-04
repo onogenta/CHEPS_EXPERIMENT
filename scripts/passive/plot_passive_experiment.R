@@ -1,6 +1,5 @@
-data_load_pulse("all",load_multi_file = TRUE)
-library(patchwork)
-library(viridis)
+data_load_pulse("all",load_multi_file = TRUE)　#passive実験の各被験者のデータを読み込み
+
 # 
 # data_avg<-data%>%
 #   group_by(ID,delay,stimu_pos)%>%
@@ -8,8 +7,8 @@ library(viridis)
 #   ungroup()
 
 data_diff<-data%>%
-  na.omit(Q1)%>%
-  group_by(ID)%>%
+  na.omit(Q1)%>%　　#Q1 が欠損しているデータを除外(※passive実験では，前半実施分の被験者は全てのトライアルでアンケートが出現していない)
+  group_by(ID)%>%   #被験者毎に，各回答値を中心化(それぞれの値を被験者毎の平均値で引く)
   mutate(pain_diff=rating_pain-mean(rating_pain,na.rm=TRUE),unp_diff=rating_unp-mean(rating_unp,na.rm=TRUE),Q1_diff=Q1-mean(Q1,na.rm=TRUE),
          Q2_diff=Q2-mean(Q2,na.rm=TRUE),Q3_diff=Q3-mean(Q3,na.rm=TRUE),Q4_diff=Q4-mean(Q4,na.rm=TRUE),delay_abs=abs(delay))%>%
   ungroup()
@@ -21,7 +20,7 @@ data_diff<-data_diff%>%
 data_diff$stimu_pos<- factor(data_diff$stimu_pos,levels = c("wrist","fore_arm"))
 
 data_diff_sum<-data_diff%>%
-  mutate(delay=factor(delay))%>%
+  mutate(delay_abs=factor(delay_abs))%>%
   group_by(ID,stimu_pos,delay)%>%
   summarise(pain_avg=mean(pain_diff),unp_avg=mean(unp_diff),Q1_avg=mean(Q1_diff),Q1_avg2=mean(Q1),Q2_avg=mean(Q2),Q3_avg=mean(Q3),Q4_avg=mean(Q4))%>%
   ungroup()
@@ -37,6 +36,16 @@ data_passive_prob<-data%>%
   summarise(simul_prob=mean(simultaneity))%>%
   mutate(delay=as.factor(delay),stimu_pos=factor(if_else(stimu_pos==1,true = "wrist",false = "fore_arm")))%>%
   ungroup()
+
+data_passive_prob_abs<-data%>%
+  na.omit(Q1)%>%
+  group_by(delay,stimu_pos)%>%
+  summarise(simul_prob=mean(simultaneity))%>%
+  mutate(delay_abs=as.factor(delay_abs),stimu_pos=factor(if_else(stimu_pos==1,true = "wrist",false = "fore_arm")))%>%
+  ungroup()
+
+
+
 
 #コントロール質問によるチェック
 data_check<-data%>%
@@ -76,7 +85,7 @@ scaler <- (y1.lim[2] - y1.lim[1])/(y2.lim[2] - y2.lim[1])
 p_1<-ggplot(data=data_diff_sum,aes(x=delay,y=pain_avg,fill=stimu_pos))
 
 p_2<-p_1+
-  labs(x="Delay(s)",y="Pain(cwc)",title = "Pain")+
+  labs(x="Delay",y="Pain(cwc)",title = "Pain")+
   
   scale_y_continuous(limit=y1.lim, expand = c(0.1, 0), 
                      sec.axis=sec_axis( ~ ./scaler,
@@ -91,7 +100,7 @@ p_3<-p_2+
   geom_hline(linetype="dashed",yintercept = 0,col="black")
 
 p_pain<-p_3+
-  geom_line(aes(x=as.numeric(delay),y=simul_prob*scaler,colour=stimu_pos),size=4,data = data_passive_prob)+
+  #geom_line(aes(x=as.numeric(delay),y=simul_prob*scaler,colour=stimu_pos),size=4,data = data_passive_prob_abs)+
   # geom_point(aes(x=delay,y=simul_prob*scaler),col="black")+
   # labs(x="\ndelay\n", y="\nPain intensity(cwc)\n", color = "",
   #      title='\nPain\n', 
@@ -159,10 +168,10 @@ y1.lim <- c(ceiling(Q1.min*1.1), ceiling(Q1.max*1.1))
 y2.lim <- c(-1, 1.2)
 scaler <- (y1.lim[2] - y1.lim[1])/(y2.lim[2] - y2.lim[1])
 
-p_1<-ggplot(data=data_diff_sum,aes(x=delay,y=Q1_avg,fill=stimu_pos))
+p_1<-ggplot(data=data_diff_sum,aes(x=delay_abs,y=Q1_avg,fill=stimu_pos))
 
 p_2<-p_1+
-  labs(x="Delay(s)",y="Embodiment(cwc)",title = "Embodiment")+
+  labs(x="Delay(s)",y="Ownership(cwc)",title = "Ownership")+
   
   scale_y_continuous(limit=y1.lim, expand = c(0.1, 0), 
                      sec.axis=sec_axis( ~ ./scaler,
@@ -177,7 +186,7 @@ p_3<-p_2+
   geom_hline(linetype="dashed",yintercept = 0,col="black")
 
 p_Q1<-p_3+
-  geom_line(aes(x=as.numeric(delay),y=simul_prob*scaler,colour=stimu_pos),size=4,data = data_passive_prob)+
+  geom_line(aes(x=as.numeric(delay),y=simul_prob*scaler,colour=stimu_pos),size=4,data = data_passive_prob_abs)+
   # geom_point(aes(x=delay,y=simul_prob*scaler),col="black")+
   # labs(x="\ndelay\n", y="\nPain intensity(cwc)\n", color = "",
   #      title='\nPain\n', 

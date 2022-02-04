@@ -1,0 +1,659 @@
+---
+title: "解析結果_更新版(delay生データ使用)(パッシブ条件,23人) ※embodimentのサンプル数が個人で不均一"
+author: "Genta"
+date: "2021/12/9"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning=FALSE,message=FALSE)
+```
+
+## パッケージのインポートとファイル読み込み用関数の定義
+
+
+
+```{r data_load_pulse,warning=FALSE,message=FALSE}
+library(easystats)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(ggforce)
+library(ggpubr)
+library(tidyr)
+library(lubridate)
+library(scales)
+library(rstatix)
+library(lmerTest)
+library(lme4)
+library(report)
+library(MuMIn)
+library(ggpmisc)
+library(ICC)
+library(mediation)
+
+
+data_load_pulse<-function(file_name,load_multi_file=FALSE){
+  file_path=paste("C:/Users/81808/Documents/R/R_Data/CHEPS_EXPERIMENT/raw_data/",file_name,sep="")
+  
+  data = list.files(path = file_path, full.names = T) %>%
+    map(read.csv, col.names=c("time","ID","stimu_pos","trial_num","delay","delay_num","rating_pain","rating_unp",
+                               "simultaneity","Q1","Q2","Q3","Q4","Q5"),colClasses = "character", header = F, sep = ",",na.strings="na")%>%
+    reduce(rbind)%>%
+    mutate(time=as.character(time), ID=factor(ID),stimu_pos=factor(stimu_pos),trial_num=as.integer(trial_num),
+           delay=as.numeric(delay),delay_num=factor(delay_num),rating_pain=as.numeric(rating_pain),rating_unp=as.numeric(rating_unp),
+           simultaneity=as.numeric(simultaneity),Q1=as.numeric(Q1),Q2=as.numeric(Q2),Q3=as.numeric(Q3),Q4=as.numeric(Q4))%>%
+    mutate(time=as.POSIXct(time,format="%H:%M"))
+  
+  
+  
+  if(load_multi_file==FALSE){
+    data_demo<-data%>%
+      filter(ID!=file_name)
+    
+    data<-data%>%
+      filter(ID==file_name)
+    
+    return(data)
+    
+  }
+ 
+   return(data)
+ }
+```
+
+## データの読み込みと前処理
+### 刺激部位は1,2→手首，前腕にして順序は手首，前腕に<br>同時性の評価は同時→0，非同時→1の数値に変換
+
+
+```{r preprocess, echo=TRUE}
+data<-data_load_pulse("all",load_multi_file = TRUE)
+
+data_test<-data%>%
+  mutate(stimu_pos=factor(if_else(stimu_pos==1,true = "wrist",false = "forearm"),levels = c("wrist","forearm")),
+         simultaneity=as.numeric(if_else(simultaneity==1,true=0,
+                                     false = 1)))%>%
+  group_by(ID)%>%
+  mutate(simultaneity_n=simultaneity-mean(simultaneity,na.rm=TRUE),
+         delay_abs=abs(delay))
+
+##Q1のない行を削除
+data_test<-data_test%>%
+  filter(Q1!="na")%>%
+  mutate(group=as.factor(case_when(
+           delay==0~"zero",
+           delay>0~"right",
+           delay<0~"left"
+         )))
+
+#非対称性の指標
+data_compare_asyn<-data_test%>%
+  filter(group!="zero")%>%
+  group_by(ID,group)%>%
+  summarise(pain_avg=mean(rating_pain),unp_avg=mean(rating_unp),Q1_avg=mean(Q1))
+
+  
+```
+
+##測定値の非対称性の指標の算出
+###測定値を左右でグループ分けして，その平均値を算出
+```{r ggplot_async}
+##以下ggplotによる図示
+#pain
+pain_compare<-ggplot(data=data_compare_asyn,aes(x=group,y=pain_avg,group=ID))+
+  geom_point()+
+  geom_line(data = data_compare_asyn,aes(x=as.numeric(group),y=pain_avg,group=ID))+
+  
+  scale_x_discrete(limits = c("left","right"))+
+  scale_y_continuous(limits = c(0,100))+
+  theme_classic()+
+  coord_fixed(ratio = 0.05)
+  
+
+pain_compare
+
+#unp
+unp_compare<-ggplot(data=data_compare_asyn,aes(x=group,y=unp_avg,group=ID))+
+  geom_point()+
+  geom_line(data = data_compare_asyn,aes(x=as.numeric(group),y=unp_avg,group=ID))+
+  
+  scale_x_discrete(limits = c("left","right"))+
+  scale_y_continuous(limits = c(0,100))+
+  theme_classic()+
+  coord_fixed(ratio = 0.05)
+  
+
+unp_compare
+
+#Q1
+Q1_compare<-ggplot(data=data_compare_asyn,aes(x=group,y=Q1_avg,group=ID))+
+  geom_point()+
+  geom_line(data = data_compare_asyn,aes(x=as.numeric(group),y=Q1_avg,group=ID))+
+  
+  scale_x_discrete(limits = c("left","right"))+
+  scale_y_continuous(limits = c(0,100))+
+  theme_classic()+
+  coord_fixed(ratio = 0.05)
+  
+
+Q1_compare
+
+
+
+
+```
+```{r async indicator}
+##左右の面積での比較
+#痛み
+
+
+pain_right<-filter(data_compare_asyn,group=="right")$pain_avg
+pain_left<-filter(data_compare_asyn,group=="left")$pain_avg
+
+t.test(pain_right,pain_left,paired = TRUE)
+
+#不快感
+#plot(unp_avg~group,data=data_compare_asyn)
+
+unp_right<-filter(data_compare_asyn,group=="right")$unp_avg
+unp_left<-filter(data_compare_asyn,group=="left")$unp_avg
+
+t.test(unp_right,unp_left,paired = TRUE)
+
+#所有感
+#plot(Q1_avg~group,data=data_compare_asyn)
+
+Q1_right<-filter(data_compare_asyn,group=="right")$Q1_avg
+Q1_left<-filter(data_compare_asyn,group=="left")$Q1_avg
+
+t.test(Q1_right,Q1_left,paired = TRUE)
+
+```
+
+
+## モデルの数式(説明変数にdelayを使用)
+### レベル1のモデル
+$$
+y_{ij}=\beta_{0j}+b_{1}x_{ij}+b_{2}w_{ij}+b_{3}x_{ij}w_{ij}+r_{ij}
+$$
+\begin{eqnarray}
+
+i&=&個人\\
+j&=&測定\\
+y_{ij}&=&痛み，Embodiment，不快感の各測定値\\
+x_{ij}&=&delayの数値\\
+w_{ij}&=&刺激部位のダミー変数(手首→0，前腕→1)\\
+r_{ij}\sim N(0,\sigma^2)&=&誤差(測定による変動)\\
+\beta_{0j}&=&測定値の個人平均(ランダム切片)\\
+b_{1},b_{2},b_{3}&=&各独立変数の偏回帰係数(固定効果)
+
+
+\end{eqnarray}
+
+### レベル2のモデル
+
+$$
+\beta_{0j}=\gamma_{00}+u_{0j}
+$$
+\begin{eqnarray}
+
+\gamma_{00}&=&測定値の全体平均(固定効果)\\
+u_{0j}\sim N(0,\tau_{00})&=&個人による変動(ランダム効果)
+
+\end{eqnarray}
+
+
+
+## ランダム切片モデルの適用
+
+```{r lmem}
+pain.lmem = lmer(rating_pain ~ stimu_pos+delay_abs  + (1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+unp.lmem = lmer(rating_unp ~ stimu_pos+delay_abs  + (1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+emb.lmem = lmer(Q1 ~ stimu_pos+delay_abs  + (1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+simul.lmem=lmer(simultaneity~stimu_pos+delay_abs + (1|ID),
+                data=data_test,
+                REML=FALSE,
+                na.action = na.omit,
+)
+
+summary(pain.lmem)
+summary(unp.lmem)
+summary(emb.lmem)
+summary(simul.lmem)
+
+write.csv(report(pain.lmem),"C:/Users/81808/Documents/R/R_Data/CHEPS_EXPERIMENT/table/passive_pain_absdelay_noint.csv")
+write.csv(report(unp.lmem),"C:/Users/81808/Documents/R/R_Data/CHEPS_EXPERIMENT/table/passive_unp_absdelay_noint.csv")
+write.csv(report(emb.lmem),"C:/Users/81808/Documents/R/R_Data/CHEPS_EXPERIMENT/table/passive_emb_absdelay_noint.csv")
+write.csv(report(simul.lmem),"C:/Users/81808/Documents/R/R_Data/CHEPS_EXPERIMENT/table/passive_simul_absdelay_noint.csv")
+
+
+```
+```{r}
+
+pain.lmem_pos = lmer(rating_pain ~ delay_abs+(1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+pain.lmem_delay = lmer(rating_pain ~ delay  + (1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+pain.lmem_delay_abs = lmer(rating_pain ~ delay_abs  + (1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+pain.lmem_delay_noint = lmer(rating_pain ~ stimu_pos+delay  + (1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+pain.lmem_delay_abs_noint = lmer(rating_pain ~ stimu_pos+delay_abs  + (1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+
+summary(pain.lmem_pos)
+summary(pain.lmem_delay)
+summary(pain.lmem_delay_abs)
+summary(pain.lmem_delay_noint)
+summary(pain.lmem_delay_abs_noint)
+
+
+
+```
+
+
+## 多重共線性の確認
+### VIFの導出式
+$$
+VIF_{i}=1/(1-R_{i}^2)
+$$
+$R_{i}$は$X_i$(モデルの説明変数)を新たに目的変数として，他の変数を説明変数とした最小二乗回帰を行った場合の決定係数
+
+```{r vif}
+require(car)
+vif(pain.lmem)
+
+```
+## mediation analysis
+### 説明変数：刺激部位,媒介変数：embodiment,目的変数：痛み\
+マルチレベルモデルによる解析で，刺激部位の痛み，emnodimentスコアに対する効果が有意であることは確認済み
+```{r mediation analysis}
+library(lmerTest)
+##treatmentのモデル
+fit.treatment=lmer(rating_pain~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+summary(fit.treatment)
+
+##mediatorのモデル
+fit.mediator=lmer(Q1~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+summary(fit.mediator)
+
+##全体のモデル
+fit.dv=lmer(rating_pain~delay_abs+stimu_pos + Q1 + (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+summary(fit.dv)
+
+
+
+
+detach("package:lmerTest", unload = T)
+##treatmentのモデル
+fit.treatment=lmer(rating_pain~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+
+##mediatorのモデル
+fit.mediator=lmer(Q1~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+
+##全体のモデル
+fit.dv=lmer(rating_pain~delay_abs+stimu_pos + Q1 + (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+
+##説明変数=同時性として分析
+results.pos = mediate(fit.mediator, fit.dv, 
+                          treat='stimu_pos', 
+                          mediator='Q1', 
+                          control.value  = "wrist",
+                          treat.value = "forearm",
+                          boot = F)
+  summary(results.pos)
+  
+
+```
+### 説明変数：ディレイ絶対値,媒介変数：embodiment,目的変数：痛み\
+マルチレベルモデルによる解析で，刺激部位の痛み，emnodimentスコアに対する効果が有意であることは確認済み
+```{r mediation analysis-1-2}
+library(lmerTest)
+##treatmentのモデル
+fit.treatment=lmer(rating_pain~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+summary(fit.treatment)
+
+##mediatorのモデル
+fit.mediator=lmer(Q1~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+summary(fit.mediator)
+
+##全体のモデル
+fit.dv=lmer(rating_pain~delay_abs+stimu_pos + Q1 + (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+summary(fit.dv)
+
+
+
+
+detach("package:lmerTest", unload = T)
+##treatmentのモデル
+fit.treatment=lmer(rating_pain~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+
+##mediatorのモデル
+fit.mediator=lmer(Q1~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+
+##全体のモデル
+fit.dv=lmer(rating_pain~delay_abs+stimu_pos + Q1 + (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+
+##説明変数=同時性として分析
+results.pos = mediate(fit.mediator, fit.dv, 
+                          treat='delay_abs', 
+                          mediator='Q1', 
+                          boot = F)
+  summary(results.pos)
+  
+
+```
+### 説明変数：ディレイ絶対値,媒介変数：simultaneity,目的変数：痛み\
+マルチレベルモデルによる解析で，刺激部位の痛み，emnodimentスコアに対する効果が有意であることは確認済み
+```{r mediation analysis-1-3}
+library(lmerTest)
+##treatmentのモデル
+fit.treatment=lmer(rating_pain~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+summary(fit.treatment)
+
+##mediatorのモデル
+fit.mediator=lmer(simultaneity~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+summary(fit.mediator)
+
+##全体のモデル
+fit.dv=lmer(rating_pain~delay_abs+stimu_pos + simultaneity + (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+summary(fit.dv)
+
+
+
+
+detach("package:lmerTest", unload = T)
+##treatmentのモデル
+fit.treatment=lmer(rating_pain~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+
+##mediatorのモデル
+fit.mediator=lmer(simultaneity~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+
+##全体のモデル
+fit.dv=lmer(rating_pain~delay_abs+stimu_pos + simultaneity + (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+
+##説明変数=同時性として分析
+results.pos = mediate(fit.mediator, fit.dv, 
+                          treat='delay_abs', 
+                          mediator='simultaneity', 
+                          boot = F)
+  summary(results.pos)
+  
+
+```
+### 説明変数：ディレイ絶対値,媒介変数：simultaneity,目的変数：embodiment\
+マルチレベルモデルによる解析で，刺激部位の痛み，emnodimentスコアに対する効果が有意であることは確認済み
+```{r mediation analysis-1-4}
+library(lmerTest)
+##treatmentのモデル
+fit.treatment=lmer(Q1~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+summary(fit.treatment)
+
+##mediatorのモデル
+fit.mediator=lmer(simultaneity~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+summary(fit.mediator)
+
+##全体のモデル
+fit.dv=lmer(Q1~delay_abs+stimu_pos + simultaneity + (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+summary(fit.dv)
+
+
+
+
+detach("package:lmerTest", unload = T)
+##treatmentのモデル
+fit.treatment=lmer(Q1~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+
+##mediatorのモデル
+fit.mediator=lmer(simultaneity~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+
+##全体のモデル
+fit.dv=lmer(Q1~delay_abs+stimu_pos + simultaneity + (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+
+##説明変数=同時性として分析
+results.pos = mediate(fit.mediator, fit.dv, 
+                          treat='delay_abs', 
+                          mediator='simultaneity', 
+                          boot = F)
+  summary(results.pos)
+  
+
+```
+### 説明変数：ディレイ絶対値,媒介変数：embodiment,目的変数：simul\
+マルチレベルモデルによる解析で，刺激部位の痛み，emnodimentスコアに対する効果が有意であることは確認済み
+```{r mediation analysis-1-5}
+library(lmerTest)
+##treatmentのモデル
+fit.treatment=lmer(simultaneity~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+summary(fit.treatment)
+
+##mediatorのモデル
+fit.mediator=lmer(Q1~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+summary(fit.mediator)
+
+##全体のモデル
+fit.dv=lmer(simultaneity~delay_abs+stimu_pos + Q1 + (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+summary(fit.dv)
+
+
+
+
+detach("package:lmerTest", unload = T)
+##treatmentのモデル
+fit.treatment=lmer(simultaneity~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+
+##mediatorのモデル
+fit.mediator=lmer(Q1~delay_abs+stimu_pos + (1|ID),
+                  data = data_test,
+                  REML = FALSE,
+                  na.action = na.omit)
+
+##全体のモデル
+fit.dv=lmer(simultaneity~delay_abs+stimu_pos + Q1 + (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+
+##説明変数=同時性として分析
+results.pos = mediate(fit.mediator, fit.dv, 
+                          treat='delay_abs', 
+                          mediator='Q1', 
+                          boot = F)
+  summary(results.pos)
+  
+
+```
+### 説明変数：刺激部位,媒介変数：痛み,目的変数：emboiment\
+マルチレベルモデルによる解析で，刺激部位の痛み，emnodimentスコアに対する効果が有意であることは確認済み
+```{r mediation analysis med pain}
+##mediatorのモデル
+fit.mediator=lmer(rating_pain~delay*stimu_pos + (1|ID),
+                  data = data_test,
+```
+
+
+```{r mediation analysis med pain}
+REML = FALSE,
+                  na.action = na.omit)
+##全体のモデル
+fit.dv=lmer(Q1~delay*stimu_pos + rating_pain+ (1|ID),
+            data = data_test,
+            REML = FALSE,
+            na.action = na.omit)
+summary(fit.dv)
+
+
+##説明変数=刺激部位として分析
+  results.pos = mediate(fit.mediator, fit.dv, 
+                        treat='stimu_pos', 
+                        mediator='rating_pain', 
+                        control.value = "wrist",
+                        treat.value = "fore_arm",
+                        boot = F)
+  summary(results.pos)
+```
+## ランダム切片モデルの適用(delay絶対値の使用)
+
+```{r lmem delay_abs}
+pain.lmem = lmer(rating_pain ~ stimu_pos*delay_abs  + (1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+unp.lmem = lmer(rating_unp ~ stimu_pos*delay_abs  + (1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+emb.lmem = lmer(Q1 ~ stimu_pos*delay_abs  + (1|ID),
+                   data = data_test,
+                   REML = FALSE,
+                   na.action = na.omit,
+)
+
+simul.lmem=lmer(simultaneity~stimu_pos*delay_abs + (1|ID),
+                data=data_test,
+                REML=FALSE,
+                na.action = na.omit,
+)
+
+summary(pain.lmem)
+summary(unp.lmem)
+summary(emb.lmem)
+summary(simul.lmem)
+
+write.csv(report(pain.lmem),"C:/Users/81808/Documents/R/R_Data/CHEPS_EXPERIMENT/table/passive_pain_absdelay.csv")
+write.csv(report(unp.lmem),"C:/Users/81808/Documents/R/R_Data/CHEPS_EXPERIMENT/table/passive_unp_absdelay.csv")
+write.csv(report(emb.lmem),"C:/Users/81808/Documents/R/R_Data/CHEPS_EXPERIMENT/table/passive_emb_absdelay.csv")
+write.csv(report(simul.lmem),"C:/Users/81808/Documents/R/R_Data/CHEPS_EXPERIMENT/table/passive_simul_absdelay.csv")
+
+
+```
+
+```{r multimed}
+m.med<-multimed(outcome = "rating_pain",med.main = "Q1",med.alt = NULL,treat = "delay_abs",covariates = NULL,data=data_test)
+summary(m.med)
+
+```
+
